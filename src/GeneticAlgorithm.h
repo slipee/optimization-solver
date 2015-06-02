@@ -11,8 +11,8 @@
 
 #include "Algorithm.h"
 
-const int NUM_POP_DEFAULT = 5;
-const int NUM_DESC_DEFAULT = 25;
+const int NumPopDefault = 5;
+const int NumDescDefault = 25;
 
 const int PMin = -9;
 const int PMax = 1;
@@ -20,29 +20,29 @@ const int Base = 10;
 
 class GeneticAlgorithm: public Algorithm {
 private:
-	int _num_pop;
-	int _num_desc;
-	int _max_mut;
+	int _numPop;
+	int _numDesc;
+	int _maxMut;
 	
 	int _iter;
 	float _min;
 	
-	int _res_vec_ind;
-	bool _best_val;
+	int _resVecInd;
+	bool _bestVal;
 	
 	vector<vector<float> > _population;
 	vector<vector<float> > _descendants;
-	vector<float> _intermediate_min;
+	vector<float> _intermediateMin;
 	
 	vector<float> _result;
 	
 public:
-	GeneticAlgorithm(int size, float (*target_func)(const float*, int), float left, float right,
+	GeneticAlgorithm(int size, float (*targetFunc)(const float*, int), float left, float right,
 					 vector<double> params = vector<double>());
 	
 	~GeneticAlgorithm();
 
-	const float* get_result_vector() const;
+	const float* getResultVector() const;
 	float solve();
 	
 private:

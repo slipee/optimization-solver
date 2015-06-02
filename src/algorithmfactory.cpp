@@ -14,15 +14,15 @@
 #include "differentialevolution.h"
 #include "GeneticAlgorithm.h"
 
-Algorithm* AlgorithmFactory::create(std::string name, int size, float (*target_func)(const float*, int),
-									float left_edge, float right_edge, vector<double> additional)
+Algorithm* AlgorithmFactory::create(std::string name, int size, float (*targetFunc)(const float*, int),
+									float leftEdge, float rightEdge, vector<double> additional)
 {
 	if (name.compare("AA") == 0) {
-		return new AnnealingAlgorithm(size, target_func, left_edge, right_edge, additional);
+		return new AnnealingAlgorithm(size, targetFunc, leftEdge, rightEdge, additional);
 	} else if (name.compare("MA") == 0) {
-		return new GeneticAlgorithm(size, target_func, left_edge, right_edge, additional);
+		return new GeneticAlgorithm(size, targetFunc, leftEdge, rightEdge, additional);
 	} else if (name.compare("DE") == 0) {
-		return new DifferentialEvolution(size, target_func, left_edge, right_edge, additional);
+		return new DifferentialEvolution(size, targetFunc, leftEdge, rightEdge, additional);
 	} else {
 		throw;
 	}

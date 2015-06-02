@@ -15,48 +15,48 @@
 #include "AnnealingAlgorithm.h"
 
 const int SizeCoef = 5;
-//const float DefaultProbability = 0.9;
-//const float DefaultMutPower = 0.5; // rosenbrock
+const float DefaultProbability = 0.9;
+const float DefaultMutPower = 0.5; // rosenbrock
 
 //const float DefaultProbability = 0.5;
 //const float DefaultMutPower = 0.2; // rast
 
-const float DefaultProbability = 0.5;
-const float DefaultMutPower = 0.3; // measure
+//const float DefaultProbability = 0.5;
+//const float DefaultMutPower = 0.3; // measure
 
 
 class DifferentialEvolution: public Algorithm
 {
 private:
-	int _pop_size;
+	int _popSize;
 	float _probability;
-	float _mutation_power;
+	float _mutationPower;
 	
 	int _iter;
 	float _min;
 	
-	int _res_vec_ind;
-	bool _best_val;
+	int _resVecInd;
+	bool _bestVal;
 	
-	float *_old_generation;
-	float *_new_generation;
-	float *_res_vector;
+	float *_oldGeneration;
+	float *_newGeneration;
+	float *_resVector;
 	
 public:
-	DifferentialEvolution(int size, float (*target_func)(const float*, int), float left, float right, vector<double> params = vector<double>());
+	DifferentialEvolution(int size, float (*targetFunc)(const float*, int), float left, float right, vector<double> params = vector<double>());
 	
 	~DifferentialEvolution();
 	
 	float solve();
-	const float* get_result_vector() const;
+	const float* getResultVector() const;
 	
 private:
 	void crossover();
 	void selection();
-	float mutation(float *whole_pop, int attr, int partner, int noise_one, int noise_two);
+	float mutation(float *wholePop, int attr, int partner, int noiseOne, int noiseTwo);
 	
 	void init();
-	int uniq_in_set(std::set<int>);
+	int uniqInSet(std::set<int>);
 };
 
 #endif /* defined(__OprimizationSolver__differentialevolution__) */

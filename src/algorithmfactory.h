@@ -18,8 +18,8 @@ using std::vector;
 class AlgorithmFactory {
 	
 public:
-	static Algorithm* create(std::string name, int size, float (*target_func)(const float* params, int),
-							 float left_edge, float right_edge, vector<double> additional = vector<double>());
+	static Algorithm* create(std::string name, int size, float (*targetFunc)(const float* params, int),
+							 float leftEdge, float rightEdge, vector<double> additional = vector<double>());
 };
 
 #endif /* defined(__OprimizationSolver__algorithmfactory__) */

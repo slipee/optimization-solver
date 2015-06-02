@@ -8,8 +8,8 @@
 
 std::string type;
 int size = 0;
-float left_border = 0.;
-float right_border = 0.;
+float leftBorder = 0.;
+float rightBorder = 0.;
 
 extern float rosenbrock(const float *params, int size);
 
@@ -17,16 +17,16 @@ int main(int argc, char *argv[])
 {
     MPI_Init(&argc,&argv);
 
-    int mpi_size, mpi_rank;
-    MPI_Comm_size(MPI_COMM_WORLD,&mpi_size);
-    MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
+    int mpiSize, mpiRank;
+    MPI_Comm_size(MPI_COMM_WORLD,&mpiSize);
+    MPI_Comm_rank(MPI_COMM_WORLD,&mpiRank);
 
-    srand(time(NULL) + mpi_size*mpi_rank*100);
+    srand(time(NULL) + mpiSize*mpiRank*100);
 
     type = static_cast<std::string>(argv[1]);
     size = atoi(argv[2]);
-    left_border = atof(argv[3]);
-    right_border = atof(argv[4]);
+    leftBorder = atof(argv[3]);
+    rightBorder = atof(argv[4]);
     
     vector<double> params;
     int ind = -1;
@@ -44,23 +44,23 @@ int main(int argc, char *argv[])
 
     double start = MPI_Wtime();
     
-    Algorithm *algorithm = AlgorithmFactory::create(type, size, rosenbrock, left_border, right_border);
-    float alg_res = algorithm->solve();
+    Algorithm *algorithm = AlgorithmFactory::create(type, size, rosenbrock, leftBorder, rightBorder);
+    float algRes = algorithm->solve();
 
     double end = MPI_Wtime();
 
-    if (mpi_rank == 0) {
-        std::cout << "ans " << alg_res << std::endl;
+    if (mpiRank == 0) {
+        std::cout << "ans " << algRes << std::endl;
         std::cout << "time = " << end - start << std::endl;
     }
 
-    const float *res_vec = algorithm->get_result_vector();
-    if (res_vec != NULL) {
-            std::cout << "(" << res_vec[0] << ", ";
+    const float *resVec = algorithm->getResultVector();
+    if (resVec != NULL) {
+            std::cout << "(" << resVec[0] << ", ";
             for (int i = 1; i < size-1; i++) {
-            std::cout << res_vec[i] << ", ";
+            std::cout << resVec[i] << ", ";
         }
-        std::cout << res_vec[0] << ")" << std::endl;
+        std::cout << resVec[0] << ")" << std::endl;
     }
 
     MPI_Finalize();

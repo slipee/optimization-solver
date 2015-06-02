@@ -18,63 +18,57 @@
 
 DifferentialEvolution::DifferentialEvolution(int size, float (*target_func)(const float*, int), float left, float right, vector<double> params):
 Algorithm(size, target_func, left, right),
-_pop_size(size * SizeCoef),
+_popSize(size * SizeCoef),
 //_pop_size(512),
 _probability(DefaultProbability),
-_mutation_power(DefaultMutPower),
+_mutationPower(DefaultMutPower),
 _iter(0),
-_res_vec_ind(0),
-_best_val(false),
-_res_vector(new float[size])
+_resVecInd(0),
+_bestVal(false),
+_resVector(new float[size])
 {
 	int mpi_size;
 	MPI_Comm_size(MPI_COMM_WORLD,&mpi_size);
-	_pop_size /= mpi_size;
+	_popSize /= mpi_size;
 	
 	if (params.size() != 0) {
-		_pop_size = (int)params[0];
+		_popSize = (int)params[0];
 		_probability = (int)params[1];
-		_mutation_power = (int)params[2];
+		_mutationPower = (int)params[2];
 	}
 	
-	_old_generation = new float[_pop_size * get_size()];
-	_new_generation = new float[_pop_size * get_size()];
+	_oldGeneration = new float[_popSize * getSize()];
+	_newGeneration = new float[_popSize * getSize()];
 	
 	init();
 	
-	_min = call_taget_function(_old_generation);
+	_min = callTagetFunction(_oldGeneration);
 }
 
 
 float DifferentialEvolution::solve()
 {
-	float tmp_min;
-	int mpi_rank;
-	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
+	float tmpMin;
+	int mpiRank;
+	MPI_Comm_rank(MPI_COMM_WORLD,&mpiRank);
 	
-	//while (_iter++ < get_max_iter()) {
-	while (get_cout_func() < 10000) {
-		_best_val = false;
-		float prev_min = _min;
+	while (_iter++ < getMaxIter()) {
+		_bestVal = false;
+		float prevMin = _min;
+		
 		crossover();
 		selection();
-		MPI_Allreduce(&_min, &tmp_min, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
-		if (tmp_min == _min) {
-			_best_val = true;
-		}
-		_min = tmp_min;
 		
-		if (prev_min - _min >= get_eps()) {
-//			if (mpi_rank == 0) {
-//				std::cout << _min << std::endl;
-//			}
+		MPI_Allreduce(&_min, &tmpMin, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
+		if (tmpMin == _min) {
+			_bestVal = true;
+		}
+		_min = tmpMin;
+		
+		if (prevMin - _min >= getEps()) {
 			_iter = 0;
 		}
 		
-	}
-	
-	if (mpi_rank == 0) {
-		std::cout << "iter " << get_cout_func() << std::endl;
 	}
 	
 	return _min;
@@ -82,82 +76,82 @@ float DifferentialEvolution::solve()
 
 void DifferentialEvolution::crossover()
 {
-	int mpi_size, mpi_rank;
-	MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
-	MPI_Comm_rank(MPI_COMM_WORLD, &mpi_rank);
+	int mpiSize, mpiRank;
+	MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
+	MPI_Comm_rank(MPI_COMM_WORLD, &mpiRank);
 	
-	float *whole_pop = _old_generation;
-	if (mpi_size > 1) {
-		whole_pop = new float[_pop_size * mpi_size * get_size()];
+	float *wholePop = _oldGeneration;
+	if (mpiSize > 1) {
+		wholePop = new float[_popSize * mpiSize * getSize()];
 		
 		MPI_Barrier(MPI_COMM_WORLD);
-		MPI_Allgather(_old_generation, _pop_size*get_size(), MPI_FLOAT, whole_pop, _pop_size*get_size(), MPI_FLOAT, MPI_COMM_WORLD);
+		MPI_Allgather(_oldGeneration, _popSize*getSize(), MPI_FLOAT, wholePop, _popSize*getSize(), MPI_FLOAT, MPI_COMM_WORLD);
 	}
 	
-	for (int i = 0; i < _pop_size; i++) {
-		float new_val = 0;
+	for (int i = 0; i < _popSize; i++) {
+		float newVal = 0;
 		
 		std::set<int> indexes;
-		int partner = uniq_in_set(indexes);
+		int partner = uniqInSet(indexes);
 		indexes.insert(partner);
 		
-		int noise_one = uniq_in_set(indexes);
-		indexes.insert(noise_one);
+		int noiseOne = uniqInSet(indexes);
+		indexes.insert(noiseOne);
 		
-		int noise_two = uniq_in_set(indexes);
-		indexes.insert(noise_two);
+		int noiseTwo = uniqInSet(indexes);
+		indexes.insert(noiseTwo);
 		
-		for (int j = 0; j < get_size(); j++) {
+		for (int j = 0; j < getSize(); j++) {
 			do {
 				float prob = rand()/(float)RAND_MAX;
 				
 				if (prob < _probability) {
-					new_val = mutation(whole_pop, j, partner, noise_one, noise_two);
+					newVal = mutation(wholePop, j, partner, noiseOne, noiseTwo);
 				} else {
-					new_val = _old_generation[i*get_size() + j];
+					newVal = _oldGeneration[i*getSize() + j];
 				}
 				
-			} while (new_val < get_left_board() || new_val > get_right_board());
-			_new_generation[i*get_size() + j] = new_val;
+			} while (newVal < getLeftBoard() || newVal > getRightBoard());
+			_newGeneration[i*getSize() + j] = newVal;
 		}
 	}
 	
-	if (mpi_size > 1) {
-		delete [] whole_pop;
+	if (mpiSize > 1) {
+		delete [] wholePop;
 	}
 }
 
-float DifferentialEvolution::mutation(float *whole_pop, int attr, int partner, int noise_one, int noise_two)
+float DifferentialEvolution::mutation(float *wholePop, int attr, int partner, int noiseOne, int noiseTwo)
 {
-	float noise = _mutation_power*(whole_pop[noise_one*get_size() + attr] - whole_pop[noise_two*get_size() + attr]);
-	return whole_pop[partner*get_size() + attr] + noise;
+	float noise = _mutationPower*(wholePop[noiseOne*getSize() + attr] - wholePop[noiseTwo*getSize() + attr]);
+	return wholePop[partner*getSize() + attr] + noise;
 }
 
 void DifferentialEvolution::selection()
 {
-	for (int i = 0; i < _pop_size; i++) {
-		float old_value = call_taget_function(_old_generation + i*get_size());
-		float new_value = call_taget_function(_new_generation + i*get_size());
+	for (int i = 0; i < _popSize; i++) {
+		float oldValue = callTagetFunction(_oldGeneration + i*getSize());
+		float newValue = callTagetFunction(_newGeneration + i*getSize());
 		
-		if (new_value < old_value) {
-			std::copy(_new_generation + i*get_size(), _new_generation + (i+1)*get_size(), _old_generation + i*get_size());
+		if (newValue < oldValue) {
+			std::copy(_newGeneration + i*getSize(), _newGeneration + (i+1)*getSize(), _oldGeneration + i*getSize());
 			
-			if (new_value < _min) {
-				_min = new_value;
-				_res_vec_ind = i;
+			if (newValue < _min) {
+				_min = newValue;
+				_resVecInd = i;
 			}
 		}
 	}
 }
 
-int DifferentialEvolution::uniq_in_set(std::set<int> set)
+int DifferentialEvolution::uniqInSet(std::set<int> set)
 {
-	int mpi_size;
-	MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
+	int mpiSize;
+	MPI_Comm_size(MPI_COMM_WORLD, &mpiSize);
 	
-	int uniq = rand() % (_pop_size * mpi_size);
+	int uniq = rand() % (_popSize * mpiSize);
 	while (set.find(uniq) != set.end()) {
-		uniq = rand() % (_pop_size * mpi_size);
+		uniq = rand() % (_popSize * mpiSize);
 	}
 	
 	return uniq;
@@ -165,17 +159,17 @@ int DifferentialEvolution::uniq_in_set(std::set<int> set)
 
 void DifferentialEvolution::init()
 {
-	for (int i = 0; i < _pop_size; i++) {
-		for (int j = 0; j < get_size(); j++) {
-			_old_generation[i*get_size() + j] = (rand() / (float)RAND_MAX)*(fabs(get_right_board()) + fabs(get_left_board()) + get_left_board());
+	for (int i = 0; i < _popSize; i++) {
+		for (int j = 0; j < getSize(); j++) {
+			_oldGeneration[i*getSize() + j] = (rand() / (float)RAND_MAX)*(fabs(getRightBoard()) + fabs(getLeftBoard()) + getLeftBoard());
 		}
 	}
 }
 
-const float* DifferentialEvolution::get_result_vector() const
+const float* DifferentialEvolution::getResultVector() const
 {
-	if (_best_val) {
-		return (_old_generation + _res_vec_ind*get_size());
+	if (_bestVal) {
+		return (_oldGeneration + _resVecInd*getSize());
 	} else {
 		return NULL;
 	}

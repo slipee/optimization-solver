@@ -8,20 +8,20 @@
 
 #include "Algorithm.h"
 
-Algorithm::Algorithm(int size, float (*target_func)(const float*, int), float left_edge, float right_edge):
+Algorithm::Algorithm(int size, float (*targetFunc)(const float*, int), float leftEdge, float rightEdge):
 _size(size),
-_target_function(target_func),
-_max_iter(MAX_ITER_DEFAULT),
+_targetFunction(targetFunc),
+_maxIter(MaxIterDefault),
 _eps(EpsDefault),
-_count_func(0),
-_left_edge(left_edge),
-_right_edge(right_edge)
+_countFunc(0),
+_leftEdge(leftEdge),
+_rightEdge(rightEdge)
 {
 	
 }
 
-float Algorithm::call_taget_function(const float *params)
+float Algorithm::callTagetFunction(const float *params)
 {
-	increment_count_func();
-	return _target_function(params, _size);
+	incrementCountFunc();
+	return _targetFunction(params, _size);
 }

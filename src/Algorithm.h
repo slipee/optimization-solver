@@ -14,44 +14,44 @@
 
 using std::vector;
 
-const int MAX_ITER_DEFAULT = 50;
+const int MaxIterDefault = 50;
 const float EpsDefault = 0.0001;
 
 class Algorithm {
 private:
-	float (*_target_function)(const float*, int);
+	float (*_targetFunction)(const float*, int);
 	int _size;
-	int _max_iter;
+	int _maxIter;
 	
 	float _eps;
 	
-	float _left_edge;
-	float _right_edge;
-	long long _count_func;
+	float _leftEdge;
+	float _rightEdge;
+	long long _countFunc;
 	
 	
 public:
-	Algorithm(int size, float (*target_func)(const float*, int), float left_edge, float right_edge);
+	Algorithm(int size, float (*targetFunc)(const float*, int), float leftEdge, float rightEdge);
 	
 	virtual ~Algorithm(){}
 	
-	void set_max_iter(int iter) { _max_iter = iter;}
+	void set_max_iter(int iter) { _maxIter = iter;}
 	
-	long long get_cout_func() const { return _count_func;}
-	int get_size() const { return _size;}
-	int get_max_iter() const { return _max_iter;}
-	float get_left_board() const { return _left_edge;}
-	float get_right_board() const {return _right_edge;}
-	float get_eps() const {return _eps;}
+	long long getCoutFunc() const { return _countFunc;}
+	int getSize() const { return _size;}
+	int getMaxIter() const { return _maxIter;}
+	float getLeftBoard() const { return _leftEdge;}
+	float getRightBoard() const {return _rightEdge;}
+	float getEps() const {return _eps;}
 	
 	virtual float solve() = 0;
-	virtual const float* get_result_vector() const = 0;
+	virtual const float* getResultVector() const = 0;
 	
 protected:
-	float call_taget_function(const float *params);
+	float callTagetFunction(const float *params);
 	
 private:
-	void increment_count_func() { _count_func++;}
+	void incrementCountFunc() { _countFunc++;}
 };
 
 

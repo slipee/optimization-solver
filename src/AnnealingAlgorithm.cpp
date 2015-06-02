@@ -18,58 +18,55 @@
 
 using std::string;
 
-AnnealingAlgorithm::AnnealingAlgorithm(int size, float (*target_func)(const float*, int), float left, float right, vector<double> params)
-: Algorithm(size, target_func, left, right),
-_temp_start(TEMP_START_DEFAULT),
-_temp_curr(TEMP_START_DEFAULT),
-_temp_end(TEM_END_DEFAULT),
-_iter_to_exchange(5),
-_result_vector(new float[get_size()]),
-_candidate(new float[get_size()])
+AnnealingAlgorithm::AnnealingAlgorithm(int size, float (*targetFunc)(const float*, int), float left, float right, vector<double> params)
+: Algorithm(size, targetFunc, left, right),
+_tempStart(TEMP_START_DEFAULT),
+_tempCurr(TEMP_START_DEFAULT),
+_tempEnd(TEM_END_DEFAULT),
+_iterToExchange(5),
+_resultVector(new float[getSize()]),
+_candidate(new float[getSize()])
 {
 	if (params.size() != 0) {
-		_temp_start = params[0];
-		_temp_curr = _temp_start;
-		_temp_end = params[1];
+		_tempStart = params[0];
+		_tempCurr = _tempStart;
+		_tempEnd = params[1];
 	}
 	
-	int mpi_size;
-	MPI_Comm_size(MPI_COMM_WORLD,&mpi_size);
-	
-	//_temp_start /= sqrt(mpi_size);
+	int mpiSize;
+	MPI_Comm_size(MPI_COMM_WORLD,&mpiSize);
 }
 
 float AnnealingAlgorithm::solve()
 {
-	for (int i = 0 ; i < get_size(); i++) {
-		_result_vector[i] = (rand() / (float)RAND_MAX)*(fabs(get_right_board()) + fabs(get_left_board()) + get_left_board());
+	for (int i = 0 ; i < getSize(); i++) {
+		_resultVector[i] = (rand() / (float)RAND_MAX)*(fabs(getRightBoard()) + fabs(getLeftBoard()) + getLeftBoard());
 	}
 	
-	float res_value = call_taget_function(_result_vector);
-	float curr_value = res_value;
+	float resValue = callTagetFunction(_resultVector);
+	float currValue = resValue;
 	
-	int mpi_rank, mpi_size;
-	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&mpi_size);
+	int mpiRank, mpiSize;
+	MPI_Comm_rank(MPI_COMM_WORLD,&mpiRank);
+	MPI_Comm_size(MPI_COMM_WORLD,&mpiSize);
 	
 	int iter = 0;
 	int iter2 = 0;
-	//while (_temp_curr >= _temp_end) {
-	while (get_cout_func() < 10000) {
-		float prev_min = res_value;
-		cauchy_dist();
+	while (_tempCurr >= _tempEnd) {
+		float prevMin = resValue;
+		cauchyDist();
 		
-		curr_value = call_taget_function(_candidate);
+		currValue = callTagetFunction(_candidate);
 		
-		if (curr_value < res_value) {
-			for (int i = 0; i < get_size(); i++) {
-				_result_vector[i] = _candidate[i];
+		if (currValue < resValue) {
+			for (int i = 0; i < getSize(); i++) {
+				_resultVector[i] = _candidate[i];
 			}
-			res_value = curr_value;
+			resValue = currValue;
 			
-			cauchy_temp();
+			cauchyTemp();
 		} else {
-			float probability = expf(-(curr_value - res_value)/_temp_curr);
+			float probability = expf(-(currValue - resValue)/_tempCurr);
 			if (probability < 0) {
 				exit(-99);
 			}
@@ -77,120 +74,82 @@ float AnnealingAlgorithm::solve()
 			float a = rand() / (float)RAND_MAX;
 			
 			if (a < probability) {
-				for (int i = 0; i < get_size(); i++) {
-					_result_vector[i] = _candidate[i];
+				for (int i = 0; i < getSize(); i++) {
+					_resultVector[i] = _candidate[i];
 				}
 				
-				res_value = curr_value;
+				resValue = currValue;
 				
-				cauchy_temp();
+				cauchyTemp();
 			}
-		}
-		if (mpi_rank == 0) {
-			//std::cout << res_value << std::endl;
 		}
 		iter++;
 		
-		if (mpi_size > 100 && iter % _iter_to_exchange == 0) {
-			res_value = exchange();
-		}
-		
-		cauchy_temp();
+		cauchyTemp();
 	}
 	
 	MPI_Barrier(MPI_COMM_WORLD);
-	float tmp_min;
-	MPI_Allreduce(&res_value, &tmp_min, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
+	float tmpMin;
+	MPI_Allreduce(&resValue, &tmpMin, 1, MPI_FLOAT, MPI_MIN, MPI_COMM_WORLD);
 	
-	res_value = tmp_min;
+	resValue = tmpMin;
 	
-	if (mpi_rank == 0) {
-		std::cout << "iter " << get_cout_func() << std::endl;
-	}
-	
-	return res_value;
+	return resValue;
 }
 
-float AnnealingAlgorithm::exchange()
+void AnnealingAlgorithm::cauchyDist()
 {
-	int mpi_rank, mpi_size;
-	MPI_Comm_rank(MPI_COMM_WORLD,&mpi_rank);
-	MPI_Comm_size(MPI_COMM_WORLD,&mpi_size);
-	
-	float *all_vectors = new float[get_size() * mpi_size];
-	
-	MPI_Allgather(_result_vector, get_size(), MPI_FLOAT, all_vectors, get_size(), MPI_FLOAT, MPI_COMM_WORLD);
-	
-	float cur_min = call_taget_function(all_vectors);
-	int ind = 0;
-	for (int i = 1; i < mpi_size; i++) {
-		float tmp_min = call_taget_function(all_vectors + i*get_size());
-		if (tmp_min < cur_min) {
-			cur_min = tmp_min;
-			ind = i;
-		}
-	}
-	
-	for (int i = 0; i < get_size(); i++) {
-		_result_vector[i] = all_vectors[ind*get_size() + i];
-	}
-	
-	return cur_min;
-}
-
-void AnnealingAlgorithm::cauchy_dist()
-{
-	float new_val;
-	for (int i = 0; i < get_size(); i++) {
+	float newVal;
+	for (int i = 0; i < getSize(); i++) {
 		float a = rand() / (float)RAND_MAX;
 		
-		float z = _temp_curr * tan(M_PI*a - M_PI/2.);
-		new_val = _result_vector[i] + z*(get_right_board() - get_left_board());
-		if (new_val < get_left_board() || new_val > get_right_board()) {
-			_candidate[i] = _result_vector[i];
+		float z = _tempCurr * tan(M_PI*a - M_PI/2.);
+		newVal = _resultVector[i] + z*(getRightBoard() - getLeftBoard());
+		if (newVal < getLeftBoard() || newVal > getRightBoard()) {
+			_candidate[i] = _resultVector[i];
 		} else {
-			_candidate[i] = new_val;
+			_candidate[i] = newVal;
 		}
 	}
 }
 
-void AnnealingAlgorithm::cauchy_temp()
+void AnnealingAlgorithm::cauchyTemp()
 {
-	_temp_curr = _temp_start / sqrt((double)get_cout_func());
+	_tempCurr = _tempStart / sqrt((double)getCoutFunc());
 }
 
-void AnnealingAlgorithm::very_fast_dist()
+void AnnealingAlgorithm::veryFastDist()
 {
-	float new_val;
-	for (int i = 0; i < get_size(); i++) {
+	float newVal;
+	for (int i = 0; i < getSize(); i++) {
 		float a = rand() / (float)RAND_MAX;
-		float z = _temp_curr * (pow(1. + 1./_temp_curr, 2*a - 1) - 1);
+		float z = _tempCurr * (pow(1. + 1./_tempCurr, 2*a - 1) - 1);
 			
 		if (z < 0.5) {
 			z = -z;
 		}
 		
-		new_val = _result_vector[i] + z*(get_right_board() - get_left_board());
+		newVal = _resultVector[i] + z*(getRightBoard() - getLeftBoard());
 		
-		if (new_val < get_left_board() || new_val > get_right_board()) {
+		if (newVal < getLeftBoard() || newVal > getRightBoard()) {
 			return;
 		} else {
-			_candidate[i] = new_val;
+			_candidate[i] = newVal;
 		}
 	}
 }
 
-void AnnealingAlgorithm::very_fast_temp()
+void AnnealingAlgorithm::veryFastTemp()
 {
 	//static float c = exp(160. / _size);
 	static float c = 1.1;
 	
-	_temp_curr = _temp_start * exp(-pow(get_cout_func(), 1. / get_size()));
+	_tempCurr = _tempStart * exp(-pow(getCoutFunc(), 1. / getSize()));
 }
 
-const float* AnnealingAlgorithm::get_result_vector() const
+const float* AnnealingAlgorithm::getResultVector() const
 {
-	return _result_vector;
+	return _resultVector;
 }
 
 AnnealingAlgorithm::~AnnealingAlgorithm()
