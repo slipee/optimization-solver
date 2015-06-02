@@ -8,4 +8,4 @@ Computation program can start three different algorithm:<br />
 2) Differential evolution.<br />
 3) Random mutations.<br />
 
-Helper uses paramiko for ssh-connection.
+Helper uses paramiko for managing ssh-connection.
