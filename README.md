@@ -1,7 +1,7 @@
 # optimization-solver
 Solver for optimization tasks.
 
-Has two parts: computation (C++, MPI) and helper (Python).<br />
+It consists of two parts: computation (C++, MPI) and helper (Python).<br />
 
 Computation program can start three different algorithm:<br />
 1) Annealing algorithm.<br />
